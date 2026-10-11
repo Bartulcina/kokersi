@@ -1,0 +1,491 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: black;
+    color: black;
+}
+
+img {
+    max-width: 100%;
+}
+
+a {
+    color: blue;
+}
+
+h1,
+h2,
+h3 {
+    margin-top: 0;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+    border-radius: 0;
+}
+
+
+/* MAIN LAYOUT */
+
+.grid-container {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr 1fr 300px;
+
+    grid-template-areas:
+        "top top top top"
+        "column1 column1 column1 column2"
+        "bottom bottom bottom bottom";
+
+    min-height: 100vh;
+}
+
+.top {
+    grid-area: top;
+    background: blueviolet;
+    padding: 15px;
+    border-bottom: 3px solid black;
+}
+
+.column1 {
+    grid-area: column1;
+    background: brown;
+    min-height: 500px;
+    padding: 15px;
+    border-right: 3px solid black;
+}
+
+.column2 {
+    grid-area: column2;
+    background: black;
+    color: white;
+    min-height: 500px;
+    padding: 15px;
+}
+
+.bottom {
+    grid-area: bottom;
+    background: aliceblue;
+    padding: 12px;
+    text-align: center;
+    border-top: 3px solid black;
+}
+
+
+/* NAVBAR */
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.navel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+
+    list-style: none;
+
+    margin: 0;
+    padding: 0;
+}
+
+.nav-btn {
+    display: block;
+
+    padding: 7px 12px;
+
+    border: 2px solid black;
+
+    color: black;
+
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.btn-home {
+    background: aquamarine;
+}
+
+.btn-booru {
+    background: #66aaff;
+}
+
+.btn-upload {
+    background: #66dd66;
+}
+
+.btn-login {
+    background: yellow;
+}
+
+.btn-logout {
+    background: #ff5555;
+}
+
+.btn-random {
+    background: #ff66ff;
+}
+
+
+/* GENERAL FORMS */
+
+input,
+textarea,
+select {
+    padding: 6px;
+
+    border: 2px solid black;
+
+    background: white;
+    color: black;
+
+    max-width: 100%;
+}
+
+button,
+.form-btn,
+.search-btn {
+    padding: 7px 12px;
+
+    border: 2px solid black;
+
+    background: yellow;
+    color: black;
+
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.upload-form {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    padding: 12px;
+
+    background: #336600;
+
+    border: 2px solid black;
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="file"],
+.upload-form textarea {
+    width: 100%;
+}
+
+
+/* PANELS */
+
+.panel {
+    padding: 10px;
+
+    margin-bottom: 12px;
+
+    border: 2px solid black;
+
+    background: #ffcc66;
+}
+
+.sidebar-box {
+    padding: 10px;
+
+    margin-bottom: 15px;
+
+    border: 1px solid #777;
+
+    background: #111;
+}
+
+.message {
+    padding: 8px;
+
+    margin-bottom: 10px;
+
+    border: 2px solid black;
+}
+
+.error {
+    background: #ff6666;
+}
+
+.success {
+    background: #66dd66;
+}
+
+.warning {
+    background: yellow;
+}
+
+
+/* BOORU */
+
+.booru-gallery {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(170px, 1fr));
+
+    gap: 10px;
+}
+
+.booru-post {
+    background: #ffffcc;
+
+    border: 2px solid black;
+}
+
+.booru-post-thumb-wrap {
+    height: 190px;
+
+    background: black;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-bottom: 2px solid black;
+}
+
+.booru-post-thumb-wrap img {
+    max-width: 100%;
+    max-height: 190px;
+
+    object-fit: contain;
+}
+
+.booru-post-info {
+    padding: 7px;
+
+    font-size: 14px;
+}
+
+.post-id {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.post-meta {
+    color: #444;
+}
+
+.post-user {
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+
+/* SEARCH + TAGS */
+
+.search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.search-form input {
+    flex: 1 1 150px;
+}
+
+.tag-list {
+    list-style: none;
+
+    padding: 0;
+    margin: 0;
+}
+
+.tag-list li {
+    margin-bottom: 5px;
+}
+
+.tag-link {
+    display: inline-block;
+
+    padding: 3px 6px;
+
+    border: 1px solid #777;
+
+    background: #222;
+    color: cyan;
+}
+
+.tag-count {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.search-current-tag {
+    display: inline-block;
+
+    padding: 3px 7px;
+
+    margin: 4px;
+
+    border: 1px solid black;
+
+    background: yellow;
+}
+
+.clear-link {
+    display: inline-block;
+
+    padding: 5px 8px;
+
+    margin-top: 8px;
+
+    border: 2px solid black;
+
+    background: white;
+}
+
+
+/* FULL IMAGE / NORMAL SITE IMAGES */
+
+.post-full-image {
+    background: black;
+
+    border: 2px solid black;
+
+    padding: 8px;
+}
+
+.post-full-image img,
+.column1 > .panel img {
+    display: block;
+
+    width: auto;
+    height: auto;
+
+    max-width: 100%;
+    max-height: 80vh;
+
+    margin: auto;
+}
+
+.kokimage {
+    width: 100px;
+    height: 100px;
+
+    object-fit: contain;
+
+    background: black;
+
+    border: 1px solid white;
+}
+
+
+/* CHAT */
+
+#chatForm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+#chatForm input {
+    flex: 1 1 200px;
+}
+
+#messages {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+
+    min-height: 200px;
+    max-height: 500px;
+
+    padding: 8px;
+
+    border: 2px solid black;
+
+    background: white;
+}
+
+
+/* TABLES */
+
+table {
+    border-collapse: collapse;
+    background: white;
+}
+
+th,
+td {
+    border: 1px solid black;
+    padding: 5px;
+}
+
+th {
+    background: aquamarine;
+}
+
+
+/* UTILITIES */
+
+.full-width {
+    width: 100%;
+}
+
+.small-text {
+    font-size: 12px;
+}
+
+.break-text {
+    overflow-wrap: anywhere;
+}
+
+.hidden {
+    display: none;
+}
+
+.center {
+    text-align: center;
+}
+
+.column2 hr {
+    border: 0;
+    border-top: 1px solid #777;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+
+    .grid-container {
+        grid-template-columns: 1fr;
+
+        grid-template-areas:
+            "top"
+            "column1"
+            "column2"
+            "bottom";
+    }
+
+    .column1 {
+        border-right: 0;
+        border-bottom: 3px solid black;
+    }
+
+    .booru-gallery {
+        grid-template-columns:
+            repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .booru-post-thumb-wrap {
+        height: 150px;
+    }
+
+    .booru-post-thumb-wrap img {
+        max-height: 150px;
+    }
+}

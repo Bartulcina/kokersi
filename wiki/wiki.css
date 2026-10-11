@@ -1,0 +1,80 @@
+
+/* retro wiki style: straight borders, no shadows */
+* { box-sizing: border-box; }
+body { margin: 0; background: #d5d5d5; font-family: Arial, sans-serif; color: #111; }
+a { color: #003399; }
+
+.wiki-header { padding: 15px; background: #888; border-bottom: 2px solid black; }
+.wiki-header h1 { margin: 0 0 10px; }
+.wiki-header nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.wiki-header nav a, .wiki-button, button {
+    display: inline-block; background: #ccc; border: 1px solid black;
+    border-radius: 0; padding: 8px 12px; color: black;
+    font: inherit; text-decoration: none; cursor: pointer;
+}
+.wiki-header nav a:hover, .wiki-button:hover, button:hover { background: #aaa; }
+
+.wiki-content {
+    max-width: 1150px; min-height: 550px; margin: 15px auto;
+    padding: 20px; background: #eee; border: 1px solid black;
+}
+.wiki-content h1 { margin-top: 0; padding-bottom: 7px; border-bottom: 2px solid #888; }
+.wiki-content h2, .wiki-content h3 { border-bottom: 1px solid #aaa; padding-bottom: 5px; }
+.wiki-meta { color: #555; font-size: 13px; }
+.wiki-links { display: flex; gap: 15px; margin: 15px 0; }
+.wiki-list li { margin: 12px 0; }
+.wiki-article { line-height: 1.6; overflow-wrap: anywhere; }
+.wiki-article p { margin: 12px 0; }
+.wiki-article::after { content: ''; display: block; clear: both; }
+
+/* character/event infobox */
+.wiki-infobox {
+    float: right; width: 290px; max-width: 100%; padding: 6px;
+    margin: 0 0 15px 20px; border: 1px solid #555;
+    background: #ddd; font-size: 14px;
+}
+.wiki-infobox h3 { margin: 0; padding: 8px; text-align: center; background: #aaa; border: 1px solid #777; }
+.wiki-info-row { display: grid; grid-template-columns: 40% 1fr; gap: 5px; padding: 7px 4px; border-bottom: 1px solid #aaa; }
+.wiki-info-row strong, .wiki-info-row span { overflow-wrap: anywhere; }
+
+/* images, captions and booru links */
+.wiki-image { display: table; max-width: 100%; padding: 6px; margin: 15px 0; border: 1px solid #888; background: #ddd; }
+.wiki-image img { display: block; width: auto; max-width: 100%; max-height: 500px; object-fit: contain; }
+.wiki-image figcaption { padding: 6px 2px 0; text-align: center; font-size: 13px; color: #333; }
+.wiki-infobox .wiki-image { display: block; margin: 8px auto; padding: 0; border: 0; background: transparent; }
+.wiki-infobox .wiki-image img { margin: auto; max-height: 300px; }
+.wiki-missing { color: #a00; }
+
+/* message boxes above articles */
+.wiki-notice { display: flex; align-items: center; gap: 14px; max-width: 900px;
+    margin: 12px 0; padding: 12px; background: #e5e5e5; border: 1px solid #999; border-left: 6px solid #777; }
+.wiki-notice.spoiler { background: #f4eedf; border-left-color: #c48a23; }
+.wiki-notice.nsfw { background: #f4e4e4; border-left-color: #a33; }
+.wiki-notice.warning { background: #f5e8db; border-left-color: #d65c17; }
+.wiki-notice.info { background: #e4edf4; border-left-color: #3979ae; }
+.notice-symbol { display: flex; align-items: center; justify-content: center; flex: 0 0 52px;
+    height: 52px; border: 2px solid #777; font-size: 22px; font-weight: bold; }
+.notice-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notice-text p { margin: 5px 0 0; font-size: 14px; }
+.notice-image { flex: 0 0 65px; }
+.notice-image .wiki-image { display: block; margin: 0; padding: 0; border: 0; background: transparent; }
+.notice-image img { width: 65px; height: 65px; object-fit: contain; }
+
+/* forms and revision history */
+input, select, textarea { padding: 8px; border: 1px solid black; border-radius: 0;
+    background: white; font: inherit; }
+input, select, textarea { max-width: 100%; }
+.wiki-search, .wiki-toolbar, .wiki-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0; }
+.wiki-search input { flex: 1; min-width: 140px; }
+form label { display: block; margin: 12px 0 5px; font-weight: bold; }
+#article-title { display: block; width: 100%; }
+#wiki-text { display: block; width: 100%; min-height: 440px; resize: vertical; }
+.wiki-help, .wiki-revision pre { padding: 12px; background: #ddd; border: 1px solid #aaa; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wiki-revision { margin: 10px 0; padding: 10px; border: 1px solid #999; background: #ddd; }
+.wiki-error { padding: 10px; border: 1px solid darkred; color: darkred; }
+
+@media (max-width: 700px) {
+    .wiki-content { margin: 5px; padding: 12px; }
+    .wiki-infobox { float: none; width: 100%; margin: 12px 0; }
+    .wiki-notice { gap: 10px; padding: 8px; }
+}

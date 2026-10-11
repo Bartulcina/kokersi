@@ -1,0 +1,6 @@
+/db.php
+/booru/uploads/
+*.log
+.env
+*.sql.gz
+/backups/
