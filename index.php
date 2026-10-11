@@ -1,16 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
 
 <?php
-
-session_start();
-
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
-    exit;
-}
-
+require_once __DIR__ . "/auth.php";
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
 
@@ -43,26 +37,52 @@ if (!isset($_SESSION["user_id"])) {
         <div class="column1">
 
             <h1>
-                Evala kok,
-                <?php echo htmlspecialchars($_SESSION["username"]); ?>
+                <?php if (loggedIn()): ?>
+
+                    Evala kok,
+                    <?= htmlspecialchars($_SESSION["username"] ?? "korisnik") ?>
+
+                <?php else: ?>
+
+                    Evala kok, goste!
+
+                <?php endif; ?>
             </h1>
 
 
-            <form id="chatForm">
+            <?php if (loggedIn()): ?>
 
-                <input
-                    type="text"
-                    id="message"
-                    placeholder="message"
-                    required
-                    autocomplete="off"
-                >
+                <form id="chatForm">
 
-                <button type="submit">
-                    Send
-                </button>
+                    <input
+                        type="text"
+                        id="message"
+                        placeholder="message"
+                        required
+                        autocomplete="off"
+                    >
 
-            </form>
+                    <button type="submit">
+                        Send
+                    </button>
+
+                </form>
+
+            <?php else: ?>
+
+                <div class="panel">
+
+                    <p>
+                        Logiraj se za slanje poruka.
+                    </p>
+
+                    <a href="login.php" class="nav-btn btn-login">
+                        LOGIN
+                    </a>
+
+                </div>
+
+            <?php endif; ?>
 
 
             <pre id="messages"></pre>
@@ -72,13 +92,23 @@ if (!isset($_SESSION["user_id"])) {
 
         <div class="column2">
 
+            <img
+                src="slike/bartul.png"
+                alt="carobnjak vas nabildani"
+            >
+
+            <img
+                src="slike/bartul.gif"
+                alt=""
+            >
+
         </div>
 
 
         <div class="bottom">
 
             <h2>
-                @banklan trademark
+                @banklan trademark THIS IS SATIRE AND NOTHING ILLEGAL IS HERE!!!
             </h2>
 
         </div>
@@ -93,46 +123,73 @@ if (!isset($_SESSION["user_id"])) {
         const messages = document.querySelector("#messages");
 
 
-        form.addEventListener("submit", function(event) {
+        // only logged-in users can send messages
+        if (form) {
 
-            event.preventDefault();
+            form.addEventListener("submit", function(event) {
 
-            if (messageInput.value.trim() === "") {
-                return;
-            }
+                event.preventDefault();
 
+                if (messageInput.value.trim() === "") {
+                    return;
+                }
 
-            const data = new FormData();
+                const data = new FormData();
 
-            data.append(
-                "message",
-                messageInput.value
-            );
+                data.append(
+                    "message",
+                    messageInput.value
+                );
 
+                fetch("send.php", {
 
-            fetch("send.php", {
+                    method: "POST",
+                    body: data
 
-                method: "POST",
-                body: data
+                })
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error("Failed to send message");
+                    }
+
+                    messageInput.value = "";
+
+                    loadMessages();
+
+                })
+                .catch(error => {
+                    console.error(error);
+                });
 
             });
 
-
-            messageInput.value = "";
-
-        });
+        }
 
 
+        // everyone can read messages
         function loadMessages() {
 
-            fetch("messages.php")
+            fetch("messages.php", { cache: "no-store" })
 
-                .then(response => response.text())
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error("Failed to load messages");
+                    }
+
+                    return response.text();
+
+                })
 
                 .then(data => {
 
                     messages.textContent = data;
 
+                })
+
+                .catch(error => {
+                    console.error(error);
                 });
 
         }

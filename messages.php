@@ -1,9 +1,11 @@
+
 <?php
 
-header("Content-Type: text/plain");
+header("Content-Type: text/plain; charset=utf-8");
+header("Cache-Control: no-store");
 
 $file = __DIR__ . "/chat.log";
 
-if (file_exists($file)) {
+if (is_file($file) && is_readable($file)) {
     readfile($file);
-}?>
+}

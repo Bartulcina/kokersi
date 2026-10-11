@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . "/../auth.php";
+requireLogin();
 
-session_start();
 
 include "../db.php";
 

@@ -30,7 +30,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <?php if (isset($_SESSION["user_id"])): ?>
 
             <li>
-                <a class="nav-btn btn-upload" href="upload.php">
+                <a class="nav-btn btn-upload" href="booru/upload.php">
                     UPLOAD
                 </a>
             </li>

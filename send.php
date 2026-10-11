@@ -1,30 +1,29 @@
+
 <?php
 
-session_start();
+require_once __DIR__ . "/auth.php";
+requireLogin(false);
 
-if (!isset($_SESSION["user_id"])) {
-    http_response_code(401);
-    exit("Not logged in");
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    http_response_code(405);
+    exit("Method not allowed");
 }
 
+$name = $_SESSION["username"] ?? "Unknown";
 
-$name = $_SESSION["username"];
-
-$message = trim(
-    $_POST["message"] ?? ""
-);
-
+$message = trim($_POST["message"] ?? "");
 
 if ($message === "") {
-
     http_response_code(400);
     exit("Message is required");
-
 }
 
+if (strlen($message) > 1000) {
+    http_response_code(400);
+    exit("Message too long");
+}
 
 $fullMessage = $name . ": " . $message;
-
 
 $socket = socket_create(
     AF_INET,
@@ -32,8 +31,12 @@ $socket = socket_create(
     SOL_UDP
 );
 
+if ($socket === false) {
+    http_response_code(500);
+    exit("Socket error");
+}
 
-socket_sendto(
+$result = socket_sendto(
     $socket,
     $fullMessage,
     strlen($fullMessage),
@@ -42,5 +45,11 @@ socket_sendto(
     30001
 );
 
-
 socket_close($socket);
+
+if ($result === false) {
+    http_response_code(500);
+    exit("Failed to send message");
+}
+
+echo "Message sent";

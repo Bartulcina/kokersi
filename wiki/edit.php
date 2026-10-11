@@ -1,6 +1,9 @@
-
 <?php
 require_once 'functions.php';
+
+requireLogin();
+
+// rest of edit.php
 
 if (!isset($_SESSION['wiki_csrf'])) {
     $_SESSION['wiki_csrf'] = bin2hex(random_bytes(32));

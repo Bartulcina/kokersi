@@ -1,8 +1,7 @@
+
 <?php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/../auth.php";
 
 $currentPage = basename($_SERVER["PHP_SELF"]);
 
@@ -13,54 +12,33 @@ $currentPage = basename($_SERVER["PHP_SELF"]);
     <ul class="navel">
 
         <li>
-            <a
-                class="nav-btn btn-home"
-                href="../index.php"
-            >
+            <a class="nav-btn btn-home" href="../index.php">
                 HOME
             </a>
         </li>
 
-
         <li>
-            <a
-                class="nav-btn btn-booru <?php
-                if ($currentPage === "index.php") {
-                    echo "active-nav";
-                }
-                ?>"
-                href="index.php"
-            >
+            <a class="nav-btn btn-booru" href="index.php">
                 BOORU
             </a>
         </li>
 
+        <li>
+            <a class="nav-btn btn-wiki" href="../wiki/index.php">
+                WIKI
+            </a>
+        </li>
 
-        <?php if (isset($_SESSION["user_id"])): ?>
+        <?php if (loggedIn()): ?>
 
             <li>
-                <a
-                    class="nav-btn btn-upload <?php
-                    if ($currentPage === "upload.php") {
-                        echo "active-nav";
-                    }
-                    ?>"
-                    href="upload.php"
-                >
+                <a class="nav-btn btn-upload" href="upload.php">
                     UPLOAD
                 </a>
             </li>
 
             <li>
-                 <a href="../wiki/index.php">WIKI</a>
-            </li>
-
-
-            <li>
-                <a
-                    class="nav-btn btn-logout"
-                    href="../logout.php"
-                >
+                <a class="nav-btn btn-logout" href="../logout.php">
                     LOGOUT
                 </a>
             </li>
@@ -68,16 +46,12 @@ $currentPage = basename($_SERVER["PHP_SELF"]);
         <?php else: ?>
 
             <li>
-                <a
-                    class="nav-btn btn-login"
-                    href="../login.php"
-                >
+                <a class="nav-btn btn-login" href="../login.php">
                     LOGIN
                 </a>
             </li>
 
         <?php endif; ?>
-
 
     </ul>
 

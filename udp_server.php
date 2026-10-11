@@ -2,13 +2,20 @@
 
 $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
-socket_bind($socket, "0.0.0.0", 30001);
+if ($socket === false) {
+    exit("Could not create socket\n");
+}
+
+// only accept messages from this machine
+if (!socket_bind($socket, "127.0.0.1", 30001)) {
+    exit("Could not bind UDP socket\n");
+}
 
 echo "UDP chat server running on port 30001\n";
 
 while (true) {
 
-    socket_recvfrom(
+    $result = socket_recvfrom(
         $socket,
         $message,
         4096,
@@ -16,6 +23,10 @@ while (true) {
         $ip,
         $port
     );
+
+    if ($result === false) {
+        continue;
+    }
 
     $message = trim($message);
 
