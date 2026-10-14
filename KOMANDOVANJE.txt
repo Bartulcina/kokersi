@@ -1,0 +1,6 @@
+cd C:\xampp\htdocs\kokersi
+git add -A
+git commit -m "Update website"
+git push origin main
+
+ssh -t franebacic@192.168.100.40 "bash ~/deploy-kokersi.sh"

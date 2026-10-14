@@ -1,1169 +1,379 @@
+
 <?php
-require_once __DIR__ . "/../auth.php";
+require_once __DIR__ . '/../auth.php';
 requireLogin();
+require_once __DIR__ . '/../db.php';
 
-
-
-include "../db.php";
-
-
-// --------------------------------------------------
-// LOGIN REQUIRED
-// --------------------------------------------------
-
-if (!isset($_SESSION["user_id"])) {
-
-    header("Location: ../login.php");
-
-    exit;
+// create csrf token
+if (empty($_SESSION['booru_csrf'])) {
+    $_SESSION['booru_csrf'] = bin2hex(random_bytes(32));
 }
 
-
-// --------------------------------------------------
-// CSRF TOKEN
-// --------------------------------------------------
-
-if (!isset($_SESSION["booru_csrf"])) {
-
-    $_SESSION["booru_csrf"] =
-        bin2hex(random_bytes(32));
-}
-
-
-// --------------------------------------------------
-// THUMBNAIL FUNCTION
-// --------------------------------------------------
-
-function createThumbnail(
-    $sourcePath,
-    $thumbPath,
-    $mime,
-    $sourceWidth,
-    $sourceHeight,
-    $maxWidth = 300,
-    $maxHeight = 300
-) {
-
-    // load original
-
-    switch ($mime) {
-
-        case "image/jpeg":
-
-            if (!function_exists("imagecreatefromjpeg")) {
-                return false;
-            }
-
-            $source =
-                imagecreatefromjpeg($sourcePath);
-
-            break;
-
-
-        case "image/png":
-
-            if (!function_exists("imagecreatefrompng")) {
-                return false;
-            }
-
-            $source =
-                imagecreatefrompng($sourcePath);
-
-            break;
-
-
-        case "image/webp":
-
-            if (!function_exists("imagecreatefromwebp")) {
-                return false;
-            }
-
-            $source =
-                imagecreatefromwebp($sourcePath);
-
-            break;
-
-
-        case "image/gif":
-
-            if (!function_exists("imagecreatefromgif")) {
-                return false;
-            }
-
-            $source =
-                imagecreatefromgif($sourcePath);
-
-            break;
-
-
-        default:
-
-            return false;
+// create image thumbnails
+function createThumbnail($sourcePath, $thumbPath, $mime, $width, $height)
+{
+    if (!function_exists('imagecreatetruecolor')) {
+        return false;
     }
 
+    switch ($mime) {
+        case 'image/jpeg':
+            $source = function_exists('imagecreatefromjpeg')
+                ? @imagecreatefromjpeg($sourcePath) : false;
+            break;
+        case 'image/png':
+            $source = function_exists('imagecreatefrompng')
+                ? @imagecreatefrompng($sourcePath) : false;
+            break;
+        case 'image/webp':
+            $source = function_exists('imagecreatefromwebp')
+                ? @imagecreatefromwebp($sourcePath) : false;
+            break;
+        case 'image/gif':
+            $source = function_exists('imagecreatefromgif')
+                ? @imagecreatefromgif($sourcePath) : false;
+            break;
+        default:
+            return false;
+    }
 
     if (!$source) {
         return false;
     }
 
-
-    // calculate thumbnail size
-    // while keeping aspect ratio
-
-    $ratio = min(
-        $maxWidth / $sourceWidth,
-        $maxHeight / $sourceHeight,
-        1
-    );
-
-
-    $thumbWidth =
-        max(
-            1,
-            (int) round(
-                $sourceWidth * $ratio
-            )
-        );
-
-
-    $thumbHeight =
-        max(
-            1,
-            (int) round(
-                $sourceHeight * $ratio
-            )
-        );
-
-
-    // create thumbnail canvas
-
-    $thumb =
-        imagecreatetruecolor(
-            $thumbWidth,
-            $thumbHeight
-        );
-
+    $ratio = min(300 / $width, 300 / $height, 1);
+    $thumbWidth = max(1, (int) round($width * $ratio));
+    $thumbHeight = max(1, (int) round($height * $ratio));
+    $thumb = imagecreatetruecolor($thumbWidth, $thumbHeight);
 
     if (!$thumb) {
-
         imagedestroy($source);
-
         return false;
     }
 
-
-    // preserve transparency
-
-    if (
-        $mime === "image/png" ||
-        $mime === "image/webp" ||
-        $mime === "image/gif"
-    ) {
-
-        imagealphablending(
-            $thumb,
-            false
-        );
-
-        imagesavealpha(
-            $thumb,
-            true
-        );
-
-
-        $transparent =
-            imagecolorallocatealpha(
-                $thumb,
-                0,
-                0,
-                0,
-                127
-            );
-
-
-        imagefill(
-            $thumb,
-            0,
-            0,
-            $transparent
-        );
+    // preserve transparent backgrounds
+    if (in_array($mime, ['image/png', 'image/webp', 'image/gif'], true)) {
+        imagealphablending($thumb, false);
+        imagesavealpha($thumb, true);
+        $clear = imagecolorallocatealpha($thumb, 0, 0, 0, 127);
+        imagefill($thumb, 0, 0, $clear);
     }
 
-
-    // resize image
-
     imagecopyresampled(
-        $thumb,
-        $source,
-
-        0,
-        0,
-
-        0,
-        0,
-
-        $thumbWidth,
-        $thumbHeight,
-
-        $sourceWidth,
-        $sourceHeight
+        $thumb, $source, 0, 0, 0, 0,
+        $thumbWidth, $thumbHeight, $width, $height
     );
 
-
-    // save thumbnail
-
     switch ($mime) {
-
-        case "image/jpeg":
-
-            $saved =
-                imagejpeg(
-                    $thumb,
-                    $thumbPath,
-                    85
-                );
-
+        case 'image/jpeg':
+            $saved = function_exists('imagejpeg')
+                && imagejpeg($thumb, $thumbPath, 85);
             break;
-
-
-        case "image/png":
-
-            $saved =
-                imagepng(
-                    $thumb,
-                    $thumbPath,
-                    6
-                );
-
+        case 'image/png':
+            $saved = function_exists('imagepng')
+                && imagepng($thumb, $thumbPath, 6);
             break;
-
-
-        case "image/webp":
-
-            $saved =
-                imagewebp(
-                    $thumb,
-                    $thumbPath,
-                    82
-                );
-
+        case 'image/webp':
+            $saved = function_exists('imagewebp')
+                && imagewebp($thumb, $thumbPath, 82);
             break;
-
-
-        case "image/gif":
-
-            $saved =
-                imagegif(
-                    $thumb,
-                    $thumbPath
-                );
-
+        case 'image/gif':
+            $saved = function_exists('imagegif')
+                && imagegif($thumb, $thumbPath);
             break;
-
-
         default:
-
             $saved = false;
     }
 
-
     imagedestroy($source);
-
     imagedestroy($thumb);
-
-
     return $saved;
 }
 
+$message = '';
 
-// --------------------------------------------------
-// DEFAULT MESSAGE
-// --------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-$message = "";
-
-
-// --------------------------------------------------
-// HANDLE UPLOAD
-// --------------------------------------------------
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
-
-    // ----------------------------------------------
-    // CSRF CHECK
-    // ----------------------------------------------
-
-    if (
-        !isset($_POST["csrf_token"]) ||
-        !hash_equals(
-            $_SESSION["booru_csrf"],
-            $_POST["csrf_token"]
-        )
-    ) {
-
+    // check csrf token
+    $token = $_POST['csrf_token'] ?? '';
+    if (!is_string($token) || !hash_equals($_SESSION['booru_csrf'], $token)) {
         http_response_code(403);
-
-        exit("Invalid CSRF token");
+        exit('Invalid CSRF token.');
     }
 
-
-    // ----------------------------------------------
-    // FILE EXISTS
-    // ----------------------------------------------
-
-    if (!isset($_FILES["image"])) {
-
-        $message = "No image uploaded.";
+    if (!isset($_FILES['image']) || !is_array($_FILES['image'])) {
+        $message = 'No file uploaded.';
 
     } else {
+        $file = $_FILES['image'];
 
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $message = 'Upload failed. Check the PHP upload limits.';
 
-        $file = $_FILES["image"];
-
-
-        // ------------------------------------------
-        // UPLOAD ERROR
-        // ------------------------------------------
-
-        if ($file["error"] !== UPLOAD_ERR_OK) {
-
-            $message = "Image upload failed.";
+        } elseif ($file['size'] <= 0 || !is_uploaded_file($file['tmp_name'])) {
+            $message = 'Invalid upload.';
 
         } else {
+            // check real file type, not the filename extension
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
 
+            $allowed = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp',
+                'image/gif' => 'gif'
+            ];
 
-            // --------------------------------------
-            // FILE SIZE
-            // --------------------------------------
+            $maxSize = 5 * 1024 * 1024;
 
-            $maxSize =
-                5 * 1024 * 1024;
+            if (!isset($allowed[$mime])) {
+                $message = 'Only JPG, PNG, WEBP and GIF are allowed.';
 
-
-            if (
-                $file["size"] <= 0 ||
-                $file["size"] > $maxSize
-            ) {
-
-                $message =
-                    "Image must be between 1 byte and 5 MB.";
+            } elseif ($file['size'] > $maxSize) {
+                $message = 'Image limit is 5 MB.';
 
             } else {
+                // validate real image and dimensions
+                $imageInfo = @getimagesize($file['tmp_name']);
+                $width = (int) ($imageInfo[0] ?? 0);
+                $height = (int) ($imageInfo[1] ?? 0);
 
-
-                // ----------------------------------
-                // MIME TYPE
-                // ----------------------------------
-
-                $finfo =
-                    new finfo(
-                        FILEINFO_MIME_TYPE
-                    );
-
-
-                $mime =
-                    $finfo->file(
-                        $file["tmp_name"]
-                    );
-
-
-                $allowed = [
-
-                    "image/jpeg" => "jpg",
-
-                    "image/png" => "png",
-
-                    "image/webp" => "webp",
-
-                    "image/gif" => "gif"
-
-                ];
-
-
-                if (!isset($allowed[$mime])) {
-
-                    $message =
-                        "Only JPG, PNG, WEBP and GIF images are allowed.";
+                if (!$imageInfo || $width <= 0 || $height <= 0) {
+                    $message = 'Invalid image.';
 
                 } else {
-
-
-                    // ------------------------------
-                    // CHECK ACTUAL IMAGE
-                    // ------------------------------
-
-                    $imageInfo =
-                        getimagesize(
-                            $file["tmp_name"]
-                        );
-
-
-                    if ($imageInfo === false) {
-
-                        $message =
-                            "The uploaded file is not a valid image.";
-
-                    } else {
-
-
-                        $width =
-                            (int) $imageInfo[0];
-
-                        $height =
-                            (int) $imageInfo[1];
-
-
-                        if (
-                            $width <= 0 ||
-                            $height <= 0
-                        ) {
-
-                            $message =
-                                "Invalid image dimensions.";
-
-                        } else {
-
-
-                            // ----------------------
-                            // RANDOM FILENAME
-                            // ----------------------
-
-                            $extension =
-                                $allowed[$mime];
-
-
-                            $filename =
-                                bin2hex(
-                                    random_bytes(16)
-                                )
-                                . "."
-                                . $extension;
-
-
-                            // ----------------------
-                            // DIRECTORIES
-                            // ----------------------
-
-                            $uploadDir =
-                                __DIR__
-                                . "/uploads/original/";
-
-
-                            $thumbDir =
-                                __DIR__
-                                . "/uploads/thumbs/";
-
-
-                            if (!is_dir($uploadDir)) {
-
-                                mkdir(
-                                    $uploadDir,
-                                    0755,
-                                    true
-                                );
-                            }
-
-
-                            if (!is_dir($thumbDir)) {
-
-                                mkdir(
-                                    $thumbDir,
-                                    0755,
-                                    true
-                                );
-                            }
-
-
-                            if (
-                                !is_dir($uploadDir) ||
-                                !is_dir($thumbDir)
-                            ) {
-
-                                $message =
-                                    "Could not create upload directories.";
-
-                            } else {
-
-
-                                // ------------------
-                                // FILE PATHS
-                                // ------------------
-
-                                $destination =
-                                    $uploadDir
-                                    . $filename;
-
-
-                                $thumbDestination =
-                                    $thumbDir
-                                    . $filename;
-
-
-                                // ------------------
-                                // SAVE ORIGINAL
-                                // ------------------
-
-                                if (
-                                    !move_uploaded_file(
-                                        $file["tmp_name"],
-                                        $destination
-                                    )
-                                ) {
-
-                                    $message =
-                                        "Could not save the uploaded image.";
-
-                                } else {
-
-
-                                    // --------------
-                                    // THUMBNAIL
-                                    // --------------
-
-                                    $thumbnailCreated =
-                                        createThumbnail(
-                                            $destination,
-                                            $thumbDestination,
-                                            $mime,
-                                            $width,
-                                            $height
-                                        );
-
-
-                                    if (!$thumbnailCreated) {
-
-
-                                        // remove original
-                                        // if thumbnail failed
-
-                                        if (
-                                            is_file(
-                                                $destination
-                                            )
-                                        ) {
-
-                                            unlink(
-                                                $destination
-                                            );
-                                        }
-
-
-                                        $message =
-                                            "Could not create thumbnail. Make sure PHP GD is enabled.";
-
-                                    } else {
-
-
-                                        // ----------
-                                        // DATABASE
-                                        // ----------
-
-                                        try {
-
-
-                                            $mysqli
-                                                ->begin_transaction();
-
-
-                                            // ------
-                                            // POST
-                                            // ------
-
-                                            $originalFilename =
-                                                basename(
-                                                    $file["name"]
-                                                );
-
-
-                                            $stmt =
-                                                $mysqli->prepare("
-                                                    INSERT INTO booru_posts
-                                                    (
-                                                        user_id,
-                                                        filename,
-                                                        original_filename,
-                                                        mime_type,
-                                                        file_size,
-                                                        width,
-                                                        height
-                                                    )
-                                                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                                                ");
-
-
-                                            $stmt->bind_param(
-                                                "isssiii",
-
-                                                $_SESSION["user_id"],
-
-                                                $filename,
-
-                                                $originalFilename,
-
-                                                $mime,
-
-                                                $file["size"],
-
-                                                $width,
-
-                                                $height
-                                            );
-
-
-                                            $stmt->execute();
-
-
-                                            $postId =
-                                                $mysqli
-                                                ->insert_id;
-
-
-                                            // ------
-                                            // TAGS
-                                            // ------
-
-                                            $tagsText =
-                                                strtolower(
-                                                    trim(
-                                                        $_POST["tags"]
-                                                        ?? ""
-                                                    )
-                                                );
-
-
-                                            $tags =
-                                                preg_split(
-                                                    '/\s+/',
-                                                    $tagsText,
-                                                    -1,
-                                                    PREG_SPLIT_NO_EMPTY
-                                                );
-
-
-                                            // remove duplicates
-
-                                            $tags =
-                                                array_unique(
-                                                    $tags
-                                                );
-
-
-                                            // max 50 tags
-
-                                            $tags =
-                                                array_slice(
-                                                    $tags,
-                                                    0,
-                                                    50
-                                                );
-
-
-                                            foreach (
-                                                $tags as $tag
-                                            ) {
-
-
-                                                $tag =
-                                                    trim(
-                                                        $tag
-                                                    );
-
-
-                                                if ($tag === "") {
-                                                    continue;
-                                                }
-
-
-                                                // remove unwanted chars
-
-                                                $tag =
-                                                    preg_replace(
-                                                        '/[^a-z0-9_-]/',
-                                                        '',
-                                                        $tag
-                                                    );
-
-
-                                                if ($tag === "") {
-                                                    continue;
-                                                }
-
-
-                                                // max 100 chars
-
-                                                $tag =
-                                                    substr(
-                                                        $tag,
-                                                        0,
-                                                        100
-                                                    );
-
-
-                                                // ------------------
-                                                // INSERT TAG
-                                                // ------------------
-
-                                                $stmt =
-                                                    $mysqli->prepare("
-                                                        INSERT IGNORE INTO booru_tags
-                                                        (name)
-                                                        VALUES (?)
-                                                    ");
-
-
-                                                $stmt->bind_param(
-                                                    "s",
-                                                    $tag
-                                                );
-
-
-                                                $stmt
-                                                    ->execute();
-
-
-                                                // ------------------
-                                                // FIND TAG ID
-                                                // ------------------
-
-                                                $stmt =
-                                                    $mysqli->prepare("
-                                                        SELECT id
-                                                        FROM booru_tags
-                                                        WHERE name = ?
-                                                    ");
-
-
-                                                $stmt->bind_param(
-                                                    "s",
-                                                    $tag
-                                                );
-
-
-                                                $stmt
-                                                    ->execute();
-
-
-                                                $tagRow =
-                                                    $stmt
-                                                    ->get_result()
-                                                    ->fetch_assoc();
-
-
-                                                if (!$tagRow) {
-                                                    continue;
-                                                }
-
-
-                                                $tagId =
-                                                    (int)
-                                                    $tagRow["id"];
-
-
-                                                // ------------------
-                                                // CONNECT TAG + POST
-                                                // ------------------
-
-                                                $stmt =
-                                                    $mysqli->prepare("
-                                                        INSERT IGNORE
-                                                        INTO booru_post_tags
-                                                        (
-                                                            post_id,
-                                                            tag_id
-                                                        )
-                                                        VALUES (?, ?)
-                                                    ");
-
-
-                                                $stmt->bind_param(
-                                                    "ii",
-
-                                                    $postId,
-
-                                                    $tagId
-                                                );
-
-
-                                                $stmt
-                                                    ->execute();
-
-                                            }
-
-
-                                            // ----------------------
-                                            // FINISH DATABASE
-                                            // ----------------------
-
-                                            $mysqli
-                                                ->commit();
-
-
-                                            // new token after success
-
-                                            $_SESSION["booru_csrf"] =
-                                                bin2hex(
-                                                    random_bytes(32)
-                                                );
-
-
-                                            // go to post
-
-                                            header(
-                                                "Location: post.php?id="
-                                                . $postId
-                                            );
-
-
-                                            exit;
-
-
-                                        } catch (Throwable $e) {
-
-
-                                            // ----------------------
-                                            // DATABASE FAILED
-                                            // ----------------------
-
-                                            $mysqli
-                                                ->rollback();
-
-
-                                            // remove original
-
-                                            if (
-                                                is_file(
-                                                    $destination
-                                                )
-                                            ) {
-
-                                                unlink(
-                                                    $destination
-                                                );
-                                            }
-
-
-                                            // remove thumbnail
-
-                                            if (
-                                                is_file(
-                                                    $thumbDestination
-                                                )
-                                            ) {
-
-                                                unlink(
-                                                    $thumbDestination
-                                                );
-                                            }
-
-
-                                            $message =
-                                                "Database error while creating post.";
-
-                                        }
-
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
+                    // create storage directories
+                    $uploadDir = __DIR__ . '/uploads/original/';
+                    $thumbDir = __DIR__ . '/uploads/thumbs/';
+
+                    if (!is_dir($uploadDir)) {
+                        @mkdir($uploadDir, 0755, true);
+                    }
+                    if (!is_dir($thumbDir)) {
+                        @mkdir($thumbDir, 0755, true);
                     }
 
+                    if (!is_dir($uploadDir) || !is_dir($thumbDir)) {
+                        $message = 'Could not create upload directories.';
+
+                    } else {
+                        // random filename
+                        $filename = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
+                        $destination = $uploadDir . $filename;
+                        $thumbDestination = $thumbDir . $filename;
+
+                        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                            $message = 'Could not save uploaded file.';
+
+                        } else {
+                            // generate thumbnail
+                            $thumbnailCreated = createThumbnail(
+                                $destination, $thumbDestination, $mime, $width, $height
+                            );
+
+                            if (!$thumbnailCreated) {
+                                unlink($destination);
+                                $message = 'Could not create thumbnail. Check PHP GD.';
+
+                            } else {
+                                // save post and tags in one transaction
+                                $transactionStarted = false;
+                                try {
+                                    $mysqli->begin_transaction();
+                                    $transactionStarted = true;
+
+                                    $userId = (int) $_SESSION['user_id'];
+                                    $fileSize = (int) $file['size'];
+                                    $originalFilename = basename(str_replace('\\', '/', $file['name']));
+
+                                    $stmt = $mysqli->prepare(
+                                        'INSERT INTO booru_posts
+                                         (user_id, filename, original_filename, mime_type,
+                                          file_size, width, height)
+                                         VALUES (?, ?, ?, ?, ?, ?, ?)'
+                                    );
+                                    $stmt->bind_param(
+                                        'isssiii', $userId, $filename, $originalFilename,
+                                        $mime, $fileSize, $width, $height
+                                    );
+                                    $stmt->execute();
+                                    $postId = $mysqli->insert_id;
+                                    $stmt->close();
+
+                                    // separate tags with spaces
+                                    $tagsText = strtolower(trim((string) ($_POST['tags'] ?? '')));
+                                    $tags = preg_split('/\s+/', $tagsText, -1, PREG_SPLIT_NO_EMPTY);
+                                    $cleanTags = [];
+
+                                    foreach ($tags as $tag) {
+                                        // keep the same tag character rules
+                                        $tag = preg_replace('/[^a-z0-9_-]/', '', $tag);
+                                        $tag = substr($tag, 0, 100);
+                                        if ($tag !== '') {
+                                            $cleanTags[$tag] = true;
+                                        }
+                                    }
+
+                                    $tags = array_slice(array_keys($cleanTags), 0, 50);
+
+                                    $insertTag = $mysqli->prepare(
+                                        'INSERT IGNORE INTO booru_tags (name) VALUES (?)'
+                                    );
+                                    $findTag = $mysqli->prepare(
+                                        'SELECT id FROM booru_tags WHERE name = ?'
+                                    );
+                                    $linkTag = $mysqli->prepare(
+                                        'INSERT IGNORE INTO booru_post_tags (post_id, tag_id)
+                                         VALUES (?, ?)'
+                                    );
+
+                                    foreach ($tags as $tag) {
+                                        $insertTag->bind_param('s', $tag);
+                                        $insertTag->execute();
+
+                                        $findTag->bind_param('s', $tag);
+                                        $findTag->execute();
+                                        $tagRow = $findTag->get_result()->fetch_assoc();
+
+                                        if ($tagRow) {
+                                            $tagId = (int) $tagRow['id'];
+                                            $linkTag->bind_param('ii', $postId, $tagId);
+                                            $linkTag->execute();
+                                        }
+                                    }
+
+                                    $insertTag->close();
+                                    $findTag->close();
+                                    $linkTag->close();
+
+                                    $mysqli->commit();
+                                    $transactionStarted = false;
+
+                                    // reset token and open new post
+                                    $_SESSION['booru_csrf'] = bin2hex(random_bytes(32));
+                                    header('Location: post.php?id=' . $postId);
+                                    exit;
+
+                                } catch (Throwable $e) {
+                                    if ($transactionStarted) {
+                                        $mysqli->rollback();
+                                    }
+
+                                    // remove uploaded files if database save fails
+                                    if (is_file($destination)) {
+                                        unlink($destination);
+                                    }
+                                    if (is_file($thumbDestination)) {
+                                        unlink($thumbDestination);
+                                    }
+
+                                    $message = 'Database error while creating post.';
+                                }
+                            }
+                        }
+                    }
                 }
-
             }
-
         }
-
     }
-
 }
-
 ?>
-
-
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Upload - Kokersi Booru
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="../style.css"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload - Kokersi Booru</title>
+    <link rel="stylesheet" href="../style.css">
 </head>
-
-
 <body>
-    <?php include "navbar.php"; ?>
-
+<?php include 'navbar.php'; ?>
 
 <div class="grid-container">
 
-
-    <!-- HEADER -->
-
     <div class="top">
-
         <h1>UPLOAD POST</h1>
 
-
         <nav>
-
             <ul class="navel">
-
-                <li>
-
-                    <a href="index.php">
-                        BOORU
-                    </a>
-
-                </li>
-
-
-                <li>
-
-                    <a href="../index.php">
-                        HOME
-                    </a>
-
-                </li>
-
-
-                <li>
-
-                    <a href="../logout.php">
-                        LOGOUT
-                    </a>
-
-                </li>
-
+                <li><a href="index.php">BOORU</a></li>
+                <li><a href="../index.php">HOME</a></li>
+                <li><a href="../logout.php">LOGOUT</a></li>
             </ul>
-
         </nav>
-
     </div>
-
-
-
-    <!-- MAIN -->
 
     <div class="column1">
 
-
-        <?php if ($message !== ""): ?>
-
+        <?php if ($message !== ''): ?>
             <div class="message error">
-
-                <?php
-                echo htmlspecialchars(
-                    $message
-                );
-                ?>
-
+                <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
             </div>
-
         <?php endif; ?>
 
+        <form class="upload-form"
+              action="upload.php"
+              method="POST"
+              enctype="multipart/form-data">
 
-
-        <form
-            class="upload-form"
-            action="upload.php"
-            method="POST"
-            enctype="multipart/form-data"
-        >
-
-
-            <!-- CSRF -->
-
-            <input
-                type="hidden"
-                name="csrf_token"
-                value="<?php
-                echo htmlspecialchars(
-                    $_SESSION["booru_csrf"]
-                );
-                ?>"
-            >
-
-
-
-            <!-- IMAGE -->
+            <input type="hidden"
+                   name="csrf_token"
+                   value="<?= htmlspecialchars($_SESSION['booru_csrf'], ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="full-width">
-
-                <strong>
-                    IMAGE
-                </strong>
-
+                <strong>IMAGE</strong>
                 <br><br>
 
-
-                <input
-                    type="file"
-                    name="image"
-                    accept="
-                        image/jpeg,
-                        image/png,
-                        image/webp,
-                        image/gif
-                    "
-                    required
-                >
-
+                <input type="file"
+                       name="image"
+                       accept="image/jpeg,image/png,image/webp,image/gif"
+                       required>
             </div>
 
-
-
-            <!-- TAGS -->
-
             <div class="full-width">
-
-                <strong>
-                    TAGS
-                </strong>
-
+                <strong>TAGS</strong>
                 <br><br>
 
-
-                <input
-                    type="text"
-                    name="tags"
-                    placeholder="kokersi funny outside old_server"
-                    maxlength="500"
-                    style="width: 100%;"
-                >
-
+                <input type="text"
+                       name="tags"
+                       placeholder="kokersi funny outside old_server"
+                       maxlength="500"
+                       style="width: 100%;">
 
                 <p class="small-text">
-
-                    Separate tags with spaces.
-
-                    <br>
-
-                    Use underscores for tags
-                    containing multiple words.
-
+                    Separate tags with spaces.<br>
+                    Use underscores for tags containing multiple words.
                 </p>
-
             </div>
-
-
-
-            <!-- BUTTON -->
 
             <div class="full-width">
-
-                <button type="submit">
-
-                    POST IMAGE
-
-                </button>
-
+                <button type="submit">POST IMAGE</button>
             </div>
 
-
         </form>
-
-
     </div>
 
-
-
-    <!-- SIDEBAR -->
-
     <div class="column2">
-
-
         <div class="full-width">
+            <h2>UPLOAD INFO</h2>
 
-
-            <h2>
-                UPLOAD INFO
-            </h2>
-
-
-            <p>
-                Maximum file size:
-                <strong>5 MB</strong>
-            </p>
-
-
-            <p>
-                Allowed:
-            </p>
-
-
-            <ul>
-
-                <li>JPG / JPEG</li>
-
-                <li>PNG</li>
-
-                <li>WEBP</li>
-
-                <li>GIF</li>
-
-            </ul>
-
-
-            <p>
-                Thumbnail:
-                maximum 300 × 300
-            </p>
-
+            <p>Maximum file size: <strong>5 MB</strong></p>
+            <p>Allowed: JPG, PNG, WEBP, GIF</p>
+            <p>Thumbnail: maximum 300 x 300</p>
 
             <hr>
 
-
             <p>
-
                 Logged in as user
-
-                #<?php
-                echo (int)
-                $_SESSION["user_id"];
-                ?>
-
+                #<?= (int) $_SESSION['user_id'] ?>
             </p>
-
-
         </div>
-
-
     </div>
-
-
-
-    <!-- FOOTER -->
 
     <div class="bottom">
-
         KOKERSI BOORU
-
     </div>
 
-
 </div>
-
-
 </body>
-
 </html>

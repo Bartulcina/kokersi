@@ -228,7 +228,10 @@ $tagResult = $stmt->get_result();
 
             <?php endif; ?>
 
+            <?php require __DIR__ . '/comments.php'; ?>
+
         </div>
+
 
     </div>
 
