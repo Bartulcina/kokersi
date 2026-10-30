@@ -33,6 +33,7 @@ $articles = $stmt->get_result();
         <a href="../index.php">KOKERSI</a>
         <a href="../booru/index.php">BOORU</a>
         <a href="index.php">WIKI</a>
+        <a href="../Fileshare/index.php">FILESHARE</a>
         <a href="edit.php">CREATE ARTICLE</a>
     </nav>
 </header>
